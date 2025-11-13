@@ -10,7 +10,7 @@
 #define MAX_BRIGHTNESS 9
 
 // Calcula brillo y asigna numero de galaxias y estrellas por galaxia
-__global__ void calculateStarBrightness() {
+__global__ void calculateStarBrightness(int *out) {
   int galaxy = blockIdx.x;
   int star = threadIdx.x;
 
@@ -26,22 +26,44 @@ __global__ void calculateStarBrightness() {
   // Esperar a que todos los hilos hayan escrito
   __syncthreads();
 
-  // Un solo hilo por bloque imprime las entradas en orden
-  if (threadIdx.x == 0) {
-    printf(">>> Galaxia %d completa:\n", galaxy);
-    for (int i = 0; i < blockDim.x; ++i) {
-      printf("Estrella %d -> Brillo: %d\n", i, s_brightness[i]);
-    }
-  }
+  // Escribir resultado en arreglo global (orden: galaxy-major)
+  int index = galaxy * blockDim.x + star;
+  out[index] = s_brightness[star];
 }
+
 
 int main() {
 
   // Reservar memoria compartida: un entero por estrella
   size_t shared_mem = STARS_PER_GALAXY * sizeof(int);
 
-  calculateStarBrightness<<<NUM_GALAXIES, STARS_PER_GALAXY, shared_mem>>>();
+  // Reservar arreglo para brillos en device
+  int total = NUM_GALAXIES * STARS_PER_GALAXY;
+  int *d_brightness = NULL;
+  if (cudaMalloc(&d_brightness, total * sizeof(int)) != cudaSuccess) {
+    fprintf(stderr, "Error: cudaMalloc failed\n");
+    return 1;
+  }
 
+  // Lanzar kernel (cada bloque usa shared_mem bytes)
+  calculateStarBrightness<<<NUM_GALAXIES, STARS_PER_GALAXY, shared_mem>>>(d_brightness);
   cudaDeviceSynchronize();
+
+  // Copiar resultados al host
+  int *h_brightness = (int *)malloc(total * sizeof(int));
+  cudaMemcpy(h_brightness, d_brightness, total * sizeof(int), cudaMemcpyDeviceToHost);
+
+  for (int g = 0; g < NUM_GALAXIES; ++g) {
+    printf("Galaxia %d completa\n", g);
+    for (int s = 0; s < STARS_PER_GALAXY; ++s) {
+      int val = h_brightness[g * STARS_PER_GALAXY + s];
+      printf("- Estrella %d -> Brillo: %d\n", s, val);
+    }
+  }
+
+  // Liberar memoria
+  free(h_brightness);
+  cudaFree(d_brightness);
+
   return 0;
 }
