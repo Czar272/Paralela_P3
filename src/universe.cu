@@ -14,15 +14,33 @@ __global__ void calculateStarBrightness() {
   int galaxy = blockIdx.x;
   int star = threadIdx.x;
 
-  // Calcular brillo para esta estrella
-  int brightness = ((galaxy + 1) * (star + 2)) % MAX_BRIGHTNESS;
+  // Memoria compartida para almacenar brillos por bloque
+  extern __shared__ int s_brightness[];
 
-  printf("Galaxia %d - Estrella %d -> Brillo: %d\n", galaxy, star, brightness);
+  // Calcular brillo para esta estrella
+  int brightness = ((galaxy + 1) * (star + 2)) % (MAX_BRIGHTNESS + 1);
+
+  // Guardar en memoria compartida
+  s_brightness[star] = brightness;
+
+  // Esperar a que todos los hilos hayan escrito
+  __syncthreads();
+
+  // Un solo hilo por bloque imprime las entradas en orden
+  if (threadIdx.x == 0) {
+    printf(">>> Galaxia %d completa:\n", galaxy);
+    for (int i = 0; i < blockDim.x; ++i) {
+      printf("Estrella %d -> Brillo: %d\n", i, s_brightness[i]);
+    }
+  }
 }
 
 int main() {
 
-  calculateStarBrightness<<<NUM_GALAXIES, STARS_PER_GALAXY>>>();
+  // Reservar memoria compartida: un entero por estrella
+  size_t shared_mem = STARS_PER_GALAXY * sizeof(int);
+
+  calculateStarBrightness<<<NUM_GALAXIES, STARS_PER_GALAXY, shared_mem>>>();
 
   cudaDeviceSynchronize();
   return 0;
