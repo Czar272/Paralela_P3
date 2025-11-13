@@ -33,19 +33,15 @@ __global__ void calculateStarBrightness(int *out) {
 
 
 int main() {
+  // Tamaño total de datos
+  int total = NUM_GALAXIES * STARS_PER_GALAXY;
+  int *d_brightness = NULL;
+  cudaMalloc(&d_brightness, total * sizeof(int));
 
   // Reservar memoria compartida: un entero por estrella
   size_t shared_mem = STARS_PER_GALAXY * sizeof(int);
 
-  // Reservar arreglo para brillos en device
-  int total = NUM_GALAXIES * STARS_PER_GALAXY;
-  int *d_brightness = NULL;
-  if (cudaMalloc(&d_brightness, total * sizeof(int)) != cudaSuccess) {
-    fprintf(stderr, "Error: cudaMalloc failed\n");
-    return 1;
-  }
-
-  // Lanzar kernel (cada bloque usa shared_mem bytes)
+  // Lanzar kernel
   calculateStarBrightness<<<NUM_GALAXIES, STARS_PER_GALAXY, shared_mem>>>(d_brightness);
   cudaDeviceSynchronize();
 
@@ -73,13 +69,6 @@ int main() {
       int val = h_brightness[g * STARS_PER_GALAXY + s];
       printf("  Estrella %d -> Brillo: %d\n", s, val);
     }
-    printf("Suma total de brillo: %d\n", sumaBrilloPorGalaxia[g]);
-  }
-  
-  printf("\n");
-  
-  // Imprimir brillo promedio de todas las galaxias
-  for (int g = 0; g < NUM_GALAXIES; ++g) {
     printf(">>> Galaxia %d - Brillo promedio: %.2f\n", g, brilloPromedioPorGalaxia[g]);
   }
   

@@ -33,19 +33,15 @@ __global__ void calculateStarBrightness(int *out) {
 
 
 int main() {
-
-  // Reservar memoria compartida: un entero por estrella
-  size_t shared_mem = STARS_PER_GALAXY * sizeof(int);
-
-  // Reservar arreglo para brillos en device
+  // Tamaño total de datos
   int total = NUM_GALAXIES * STARS_PER_GALAXY;
   int *d_brightness = NULL;
-  if (cudaMalloc(&d_brightness, total * sizeof(int)) != cudaSuccess) {
-    fprintf(stderr, "Error: cudaMalloc failed\n");
-    return 1;
-  }
+  cudaMalloc(&d_brightness, total * sizeof(int));
 
-  // Lanzar kernel (cada bloque usa shared_mem bytes)
+  // Reservar memoria compartida: un int por estrella
+  size_t shared_mem = STARS_PER_GALAXY * sizeof(int);
+
+  // Lanzar kernel
   calculateStarBrightness<<<NUM_GALAXIES, STARS_PER_GALAXY, shared_mem>>>(d_brightness);
   cudaDeviceSynchronize();
 
