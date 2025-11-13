@@ -9,12 +9,12 @@
 #define STARS_PER_GALAXY 10
 #define MAX_BRIGHTNESS 9
 
-// Calcula brillo aleatorio y asigna numero de galaxias y estrellas por galaxia
+// Calcula brillo y asigna numero de galaxias y estrellas por galaxia
 __global__ void calculateStarBrightness() {
   int galaxy = blockIdx.x;
   int star = threadIdx.x;
 
-  // Calcular brillo aleatorio para esta estrella
+  // Calcular brillo para esta estrella
   int brightness = ((galaxy + 1) * (star + 2)) % MAX_BRIGHTNESS;
 
   printf("Galaxia %d - Estrella %d -> Brillo: %d\n", galaxy, star, brightness);
