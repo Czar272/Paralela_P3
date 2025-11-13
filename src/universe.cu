@@ -52,15 +52,38 @@ int main() {
   // Copiar resultados al host
   int *h_brightness = (int *)malloc(total * sizeof(int));
   cudaMemcpy(h_brightness, d_brightness, total * sizeof(int), cudaMemcpyDeviceToHost);
-
+  
+  // Calcular suma total y promedio por galaxia
+  int sumaBrilloPorGalaxia[NUM_GALAXIES] = {0};
+  float brilloPromedioPorGalaxia[NUM_GALAXIES] = {0.0f};
+  
   for (int g = 0; g < NUM_GALAXIES; ++g) {
-    printf("Galaxia %d completa\n", g);
+    int sumaBrillo = 0;
     for (int s = 0; s < STARS_PER_GALAXY; ++s) {
-      int val = h_brightness[g * STARS_PER_GALAXY + s];
-      printf("- Estrella %d -> Brillo: %d\n", s, val);
+      sumaBrillo += h_brightness[g * STARS_PER_GALAXY + s];
     }
+    sumaBrilloPorGalaxia[g] = sumaBrillo;
+    brilloPromedioPorGalaxia[g] = (float)sumaBrillo / STARS_PER_GALAXY;
   }
 
+  // Imprimir detalles de cada galaxia
+  for (int g = 0; g < NUM_GALAXIES; ++g) {
+    printf(">>> Galaxia %d completa\n", g);
+    for (int s = 0; s < STARS_PER_GALAXY; ++s) {
+      int val = h_brightness[g * STARS_PER_GALAXY + s];
+      printf("  Estrella %d -> Brillo: %d\n", s, val);
+    }
+    printf("Suma total de brillo: %d\n", sumaBrilloPorGalaxia[g]);
+  }
+  
+  printf("\n");
+  
+  // Imprimir brillo promedio de todas las galaxias
+  for (int g = 0; g < NUM_GALAXIES; ++g) {
+    printf(">>> Galaxia %d - Brillo promedio: %.2f\n", g, brilloPromedioPorGalaxia[g]);
+  }
+  
+  printf("\n");
   // Liberar memoria
   free(h_brightness);
   cudaFree(d_brightness);
