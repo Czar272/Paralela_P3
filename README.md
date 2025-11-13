@@ -1,1 +1,1 @@
-# Paralela_P3
+# Simulación de Galaxias en CUDA
