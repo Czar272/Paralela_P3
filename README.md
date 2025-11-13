@@ -12,5 +12,7 @@
 
 3. Si duplicas la cantidad de estrellas, ¿cambia el orden de impresión o solo el
 tamaño de la salida?
-    
+    Solo cmabia el tamaño de la salida
+
 4. ¿Qué representa el “brillo” dentro de este modelo paralelo?
+    en nuestro caso el brillo se calcula con: ((galaxy + 1) * (star + 2)) % MAX_BRIGHTNESS, 
